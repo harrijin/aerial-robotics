@@ -71,7 +71,7 @@ torque = zeros(3,1);
 for k = 1:4
     % Torque due to thrust
     torque = torque + crossProductEquivalent(P.quadParams.rotor_loc(1:3,k)) ...
-             * (P.quadParams.kF(k)*[0;0;omegaVec(k)]);
+             * (P.quadParams.kF(k)*[0;0;omegaVec(k)^2]);
     % Yaw torque
     torque = torque + P.quadParams.kN(k)*P.quadParams.omegaRdir(k)*[0;0;omegaVec(k)^2];
 end
