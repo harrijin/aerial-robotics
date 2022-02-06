@@ -97,25 +97,27 @@ omegaBMat = [];
 
 % Set initial states
 rK = S.state0.r;
-eK = S.state0.e;
 vK = S.state0.v;
+eK = S.state0.e;
 omegaB_K = S.state0.omegaB;
 
 % Iterate
 for k = 1:N-1
     tspan = [S.tVec(k):dtOut:S.tVec(k+1)]';
+    omegaVec = S.omegaMat(k,:)';
+    distVec = S.distMat(k,:)';
     % Build X_big
     RBI = euler2dcm(eK);
     Xk = [rK;vK;RBI(1:3,1);RBI(1:3,2);RBI(1:3,3);omegaB_K];
     % Run ODE solver on segment
-    [tVecK,XMatk] = ode45(@(t,X)quadOdeFunction(t,X,S.omegaMat(k,:)',S.distMat(k,:)',params),tspan, Xk);
+    [tVecK,XMatk] = ode45(@(t,X)quadOdeFunction(t,X,omegaVec, distVec, params), tspan, Xk);
     % Store outputs
     tVecOut = [tVecOut; tVecK(1:end-1)];
-    rMat = [rMat; XMatk(1:end-1, 1:3)];    
+    rMat = [rMat; XMatk(1:end-1, 1:3)];
     vMat = [vMat; XMatk(1:end-1, 4:6)];
     for row = 1:size(XMatk,1)-1
         R = [XMatk(row,7:9); XMatk(row,10:12); XMatk(row,13:15)]';
-        eMat = [eMat;dcm2euler(R)'];
+        eMat = [eMat;(dcm2euler(R))'];
     end
     omegaBMat = [omegaBMat;XMatk(1:end-1, 16:18)];
     % Prep for next iteration

@@ -50,13 +50,16 @@ R_BI(1:3,1) = X(7:9);
 R_BI(1:3,2) = X(10:12);
 R_BI(1:3,3) = X(13:15);
 omegaB = X(16:18);
+% Get forces and torques from rotors
+torqueDirs = -1*P.quadParams.kN' .* P.quadParams.omegaRdir;
+rotorForcesTorques = [P.quadParams.kF';torqueDirs]*(omegaVec.^2);
 % Initialize Xdot
 Xdot = zeros(18,1);
 % rI dot
 Xdot(1:3) = vI;
 % vI dot
 weight = [0;0;P.quadParams.m * -1 * P.constants.g];
-rotorThrust = P.quadParams.kF * R_BI' * [0;0;sum(omegaVec.^2)];
+rotorThrust = R_BI' * [0;0;rotorForcesTorques(1)];
 Xdot(4:6) = weight + rotorThrust + distVec;
 % RBI dot
 RBI_dot = -1*crossProductEquivalent(omegaB)*R_BI;
@@ -64,13 +67,11 @@ Xdot(7:9) = RBI_dot(1:3,1);
 Xdot(10:12) = RBI_dot(1:3,2);
 Xdot(13:15) = RBI_dot(1:3,3);
 % omegaB dot
-torque = zeros(3,1);
+torque = [0;0;rotorForcesTorques(2)];
 for k = 1:4
     % Torque due to thrust
     torque = torque + crossProductEquivalent(P.quadParams.rotor_loc(1:3,k)) ...
-             * (P.quadParams.kF*[0;0;omegaVec(k)]);
-    % Yaw torque
-    torque = torque + P.quadParams.kN*P.quadParams.omegaRdir(k)*[0;0;omegaVec(k)^2];
+             * (P.quadParams.kF(k)*[0;0;omegaVec(k)^2]);
 end
 Xdot(16:18) = inv(P.quadParams.Jq)*(torque-crossProductEquivalent(omegaB)*P.quadParams.Jq*omegaB);
 end

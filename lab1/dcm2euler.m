@@ -29,7 +29,7 @@ function [e] = dcm2euler(R_BW)
 %
 % Author: Harrison Jin
 %+==============================================================================+  
-% Singular case:
+% Singular case: phi == pi/2 or multiple
     if abs(R_BW(2,3) - 1) < 0.001
         error('Input matrix is singular case, unable to convert to euler angles');
     end
