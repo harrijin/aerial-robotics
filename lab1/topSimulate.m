@@ -57,7 +57,7 @@ S2.tVec = P.tVec;
 S2.rMat = P.state.rMat;
 S2.eMat = P.state.eMat;
 S2.plotFrequency = 20;
-S2.makeGifFlag = false;
+S2.makeGifFlag = true;
 S2.gifFileName = 'testGif.gif';
 S2.bounds=1*[-1 1 -1 1 -1 1];
 visualizeQuad(S2);
