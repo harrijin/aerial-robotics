@@ -1,0 +1,3 @@
+[submodule "lab5"]
+	path = lab5
+	url = https://gitlab.com/todd.humphreys/lab5-aerial-robotics.git
