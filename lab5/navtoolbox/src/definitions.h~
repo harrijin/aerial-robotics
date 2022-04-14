@@ -1,0 +1,183 @@
+// definitions.h
+//
+// Various definitions required to support and interpret GBX report fields.
+//
+// Copyright (c) 2018 The GRID Software Project. All rights reserved.
+
+#include "typedefs.h"
+
+#ifndef __DEFINITIONS_GRID_H
+#define __DEFINITIONS_GRID_H
+
+//======= General
+constexpr s32 SEC_PER_MINUTE = 60;
+constexpr s32 MINUTE_PER_HOUR = 60;
+constexpr s32 SEC_PER_HOUR  = 3600;
+constexpr s32 SEC_PER_DAY   = 86400;
+constexpr s32 SEC_PER_WEEK  = 604800;
+constexpr s32 DAYS_PER_WEEK = 7;
+constexpr s32 HOURS_PER_DAY = 24;
+constexpr s32 MAX_TRUNC_TOW = 100800;
+constexpr s32 GPS_WEEK_ROLLOVER = 1024;
+constexpr s32 GPS_WEEK_ROLLOVER_CNAV = 8192;
+constexpr s32 GST_WEEK_ROLLOVER = 4096;
+constexpr s64 UNIX_TIME_OF_GPS_EPOCH = 315964800;
+constexpr s32 LEAP_SECONDS_SINCE_GPS_EPOCH = 18; // As of January 2017
+
+//======= Fixed-point scaling factors
+// For further explanation of the scaling factors, see note E2 below.
+enum ScalingFactors {
+  SF_SL = 14,  // 14 is adequate
+  SF_HL = 20,  // 20 is adequate
+  SF_TL = 24,  // 24 is adequate; must be greater than or equal to SF_HL; Used to scale tFracIndexk.
+  SF_AL = 29,  // 29 is adequate; overflow at 31.  Used for calculating NCA, the number of samples in a C/A code period.
+  SF_IL = 23,  // 23 is adequate; used as the x-coordinate scaling factor in the linear interpolation function
+  SF_QL = 3,   // 3 is adequate; used as the y-coordinate scaling factor in the linear interpolation function
+  SF_PL = 33,  // 33 is adequate; SF_PL + SF_FL must be <= 64
+  SF_FL = 17,  // 16 is adequate; SF_PL + SF_FL must be <= 64
+  SF_DDSL = 16,
+  SF_BL = 60   // overflow at 63; used as phase scaling factor in carrier gen.
+};
+
+//======= Enumeration types meant to be widely accessible
+enum ReturnValue {
+  RETVAL_SUCCESS = 0,
+  RETVAL_FAILURE = -1
+};
+enum ChannelStatus {
+  // Channel has been created and is in its zero state
+  STATUS_NULL = 0,
+  // Channel has been primed for acquisition but has not yet acquired
+  STATUS_ALLOCATED = 1,
+  // Channel is actively attempting acquisition
+  STATUS_ACQUIRING = 2,
+  STATUS_ACQUIRED = 3,
+  STATUS_SYMBOL_LOCK = 4,
+  STATUS_FREQ_LOCK = 5,
+  STATUS_PHASE_LOCK = 6,
+  STATUS_DATA_LOCK = 7,
+  NUM_CHANNEL_STATUS_VALUES,
+  // Initialization value
+  STATUS_UNDEFINED
+};
+enum SolverResult : u8 {
+  SOL_NO_FIX = 0,
+  SOL_PRELIMINARY_FIX = 1,
+  SOL_STANDARD_FIX = 2,
+  SOL_PRECISE_FIX = 3
+};
+enum class TimeSystem : u8 {
+  UTC             = 0x00,
+  GPS             = 0x01,
+  GLONASS         = 0x02,
+  GALILEO         = 0x03,
+  BDS             = 0x04,
+  RAW_RECEIVER    = 0x05,
+  OFFSET_RECEIVER = 0x06,
+  INVALID         = 0xFF
+};
+// Each radionavigation signal is broadcast by a specific system.  System
+// enumerates the possible systems for the GRID receiver.
+enum class System : u8 {
+  GPS = 0,
+  GALILEO = 1,
+  GLONASS = 2,
+  SBAS = 4,
+  BDS = 5,
+  UNKNOWN = 6, // For signals of unknown origin
+  NUM_SYSTEMS,
+  UNDEFINED_SYSTEM  // Initialization value
+};
+enum class DllStage : u8 {
+  // Immediately after carrier phase lock has been achieved, the DLL enters
+  // the first transient phase.  This phase applies a high DLL bandwidth for
+  // rapid pull-in.  The discriminator employed in this stage may be
+  // coherent or non-coherent, depending on how many epochs have elapsed
+  // since the most recent carrier phase error flag was raised.
+  FIRST_TRANSIENT,
+  // After the first transient phase elapses, the DLL enters a second
+  // transient phase in which it applies an intermediate DLL bandwith as a
+  // transition to steady-state operation. The discriminator employed in
+  // this stage may be coherent or non-coherent, depending on how many
+  // epochs have elapsed since the most recent carrier phase error flag was
+  // raised. This Stage also applies whenever the DLL applies a non-coherent
+  // DLL discriminator.
+  SECOND_TRANSIENT_OR_NON_COHERENT_DISCRIMINATOR,
+  // In steady-state operation, the DLL applies a coherent DLL discriminator
+  // and a low DLL bandwidth to minimize pseudorange noise.
+  STEADY_STATE
+};
+
+//======= Immutable constants
+constexpr f64 PI = 3.14159265358979;
+constexpr f64 TWOPI = 2*PI;
+constexpr s32 SPEED_LIGHT_MPS = 299792458;
+constexpr f64 FREQ_L1_HZ = 1575.42e6;
+constexpr f64 LAMBDA_L1_M = SPEED_LIGHT_MPS/FREQ_L1_HZ;
+constexpr f64 FREQ_L2_HZ = 1227.6e6;
+constexpr f64 LAMBDA_L2_M = SPEED_LIGHT_MPS/FREQ_L2_HZ;
+constexpr f64 FREQ_L5_HZ = 1176.45e6;
+constexpr f64 LAMBDA_L5_M = SPEED_LIGHT_MPS/FREQ_L5_HZ;
+constexpr f64 DEG_TO_RAD = PI/180.0;
+constexpr f64 RAD_TO_DEG = 180.0/PI; 
+
+//======= Fixed-point scaling factors
+extern const s32 SF_S2TL;
+extern const s32 SF_ILMQL;
+extern const s32 SF_NFFTLPQL;
+extern const s32 SF_S;
+extern const s64 SF_H;
+extern const s32 SF_T;
+extern const s64 SF_A;
+extern const s32 SF_I;
+extern const s64 SF_P;
+extern const s64 SF_F;
+extern const s64 SF_B;
+extern const s64 SF_P_MASK;
+extern const s32 SF_S_MASK;
+extern const s64 SF_H_MASK;
+extern const s32 SF_T_MASK;
+extern const s64 SF_B_MASK;
+
+//======= WGS84 constants
+extern const f64 sqrt_muearth_WGS84;
+constexpr f64 AA_WGS84 = 6378137.00000;		   // meters
+constexpr f64 BB_WGS84 = 6356752.31425;		   // meters
+constexpr f64 OmegaE_WGS84 = 7.2921151467e-5;	   // radians/second
+constexpr f64 e_WGS84 = 0.0818191908334158;        // eccentricity
+constexpr f64 esquare_WGS84 = 0.00669437998863492; // eccenctricity squared
+
+//======= Miscellaneous constants
+constexpr s32 WEEK_INVALID = 9999;
+
+#endif
+
+// Explanatory notes:
+//
+// (E1) SF_SL is log2 of the "standard" scaling factor, in units per
+//      units. SF_HL is log2 of the high precision scaling factor used for
+//      internal PLL variables.  SF_TL is log2 of the time scaling factor, in
+//      units per second.
+//
+//      Scaling of phases and frequencies is based on subintervals of a cycle,
+//      called pics.  One cycle is equivalent to SF_P pics.  SF_PL is log2 of
+//      SF_P.  Frequency is measured in pics per front-end sampling interval.
+//      Phase resolution is 1/SF_P cycles, and frequency resolution is 1 pic
+//      per sample.  Choosing SF_PL = 34 ensures that phase errors remain
+//      below 0.004 cycles after propagation over an accumulation interval 10
+//      seconds long (the longest coherent accumulation we've ever
+//      contemplated) at a sampling interval of 175 ns.  This should be
+//      adequate for all practical purposes.
+//
+//      SF_FL is log2 of SF_F, which is the scaling factor for fractional
+//      pics.  Fractional pics are used, for example, in propagating the
+//      intermediate frequency fIF to get the nominal signal carrier phase.
+//      If only pics and not fractional pics were used in this case, then
+//      errors equivalent to a substantial fraction of a cycle build up after
+//      a few hours. Setting SF_FL + SF_PL = 50 ensures that the frequency
+//      resolution in fIF is good to better than 10 nano-Hz for a sampling
+//      interval of 175 ns.  This would lead to a less than 0.0002-cycle error
+//      buildup in the internal representation of the nominal signal carrier
+//      phase over an interval of 8 hours.  The resolution of a frequency
+//      expressed in pics and fractional pics per sample is 1/SF_F pics per
+//      sample.
