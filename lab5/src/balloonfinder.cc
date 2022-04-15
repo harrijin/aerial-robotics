@@ -69,6 +69,59 @@ bool BalloonFinder::findBalloonsOfSpecifiedColor(
   // coordinates.  You can push rx onto rxVec as follows: rxVec->push_back(rx)
   //
   // *************************************************************************
+  cvtColor(framep, framep, COLOR_BGR2HSV);
+  switch(color){
+    case RED:
+        Scalar colorLower_l(0,120,100), colorLower_h(10,255,255);
+        Scalar colorUpper_l(170,120,100), colorUpper_h(180,255,255);
+        Mat mLower, mUpper;
+        inRange(framep, colorLower_l, colorLower_h, mLower);
+        inRange(framep, colorUpper_l, colorUpper_h, mUpper);
+        framep = mLower | mUpper;
+      break;
+    case BLUE:
+        Scalar colorLower(90, 120, 100), colorUpper(128, 255, 255);
+        inRange(framep, colorLower, colorUpper, framep);
+      break;
+  }
+  constexpr int iterations = 5;
+  erode(framep, framep, Mat(), Point(-1, -1), iterations);
+  dilate(framep, framep, Mat(), Point(-1, -1), iterations);
+  std::vector<std::vector<Point>> contours;
+  std::vector<Vec4i> hierarchy;
+  findContours(framep, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+  RNG rng(12345);
+  Point2f center;
+  float radius;
+  constexpr float maxAspectRatio = 1.5;
+  constexpr float minRadius = 35;
+  constexpr int minPointsFor_fitEllipse = 5;
+  for(size_t ii = 0; ii < contours.size(); ii++){
+    const Scalar color = Scalar(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256));
+    minEnclosingCircle(contours[ii], center, radius);
+    float aspectRatio = maxAspectRatio;
+    if(contours[ii].size() >= minPointsFor_fitEllipse){
+      RotatedRect boundingRectangle = fitEllipse(contours[ii]);
+      const Size2f rectSize = boundingRectangle.size;
+      aspectRatio = static_cast<float>(std::max(rectSize.width, rectSize.height))/
+        std::min(rectSize.width, rectSize.height);
+    }
+    if(debuggingEnabled_){
+      std::cout << "aspectRatio: "  << aspectRatio << ", radius: "
+                << radius << std::endl;
+      drawContours(original, contours, ii, color, 2, LINE_8, hierarchy, 0);
+    }
+    if (aspectRatio < maxAspectRatio && radius > minRadius) {
+      if(debuggingEnabled_){
+        circle(original, center, static_cast<int>(radius), color, 2);
+      }
+      returnValue = true;
+      Eigen::Vector2d rx;
+      rx << center.x, center.y;
+      rxVec->push_back(rx);
+    }
+  }
 
   // The debugging section below plots the back-projection of true balloon 3d
   // location on the original image.  The balloon centers you find should be
