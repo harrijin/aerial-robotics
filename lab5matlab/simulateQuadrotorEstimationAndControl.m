@@ -164,7 +164,7 @@ for kk=1:N-1
   for ii=1:Nf
     rx = hdCameraSimulator(S.rXIMat(ii,:)',Sm,P);
     if(~isempty(rx))
-      if size(Ms.rxArray,2) < 10 && mod(skipped_images,20) == 0
+      if size(Ms.rxArray,2) < 10 && mod(skipped_images,50) == 0
           Ms.rxArray = [Ms.rxArray, rx];
           % True camera position/attitude
 %           Ms.RCIArray = [Ms.RCIArray, P.sensorParams.RCB*statek.RBI];

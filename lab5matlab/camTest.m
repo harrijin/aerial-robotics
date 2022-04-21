@@ -1,7 +1,6 @@
 % camTest:  A test jig for evaluating the estimate3dFeatureLocation function.
 
 clear;clc;
-
 sensorParamsScript;
 P.sensorParams = sensorParams;
 
@@ -34,6 +33,7 @@ M.rcArray{2} = S.statek.rI + S.statek.RBI'*P.sensorParams.rocB;
 % Compare rXI and rXIHat
 disp('rXI compared with rXIHat (should be within a few cm): ');
 [rXI  rXIHat]
+norm(rXI-rXIHat)
 
 % Examine diagonal elements of Px
 disp(['Sqrt of diagonal elements of Px (errors in rXIHat should not be much ' ...

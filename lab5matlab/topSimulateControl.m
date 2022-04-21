@@ -65,21 +65,22 @@ S2.plotFrequency = 20;
 S2.makeGifFlag = false;
 S2.gifFileName = 'testGif.gif';
 S2.bounds=[-5 5 -5 5 0 2];
-% visualizeQuad(S2);
+visualizeQuad(S2);
 size(Q.Ms.rxArray)
 [rXIHat,Px] = estimate3dFeatureLocation(Q.Ms, P)
-figure(2);clf;
-plot(Q.tVec,Q.state.rMat(:,3)); grid on;
-xlabel('Time (sec)');
-ylabel('Vertical (m)');
-title('Vertical position of CM'); 
-
-figure(5);clf;
-plot(Q.state.rMat(:,1), Q.state.rMat(:,2)); 
-axis equal; grid on; hold on;
-xlabel('X (m)');
-ylabel('Y (m)');
-title('Horizontal position of CM');
+norm(S.rXIMat'-rXIHat)
+% figure(2);clf;
+% plot(Q.tVec,Q.state.rMat(:,3)); grid on;
+% xlabel('Time (sec)');
+% ylabel('Vertical (m)');
+% title('Vertical position of CM'); 
+% 
+% figure(5);clf;
+% plot(Q.state.rMat(:,1), Q.state.rMat(:,2)); 
+% axis equal; grid on; hold on;
+% xlabel('X (m)');
+% ylabel('Y (m)');
+% title('Horizontal position of CM');
 
 
 
