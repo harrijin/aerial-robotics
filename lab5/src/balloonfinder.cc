@@ -71,23 +71,25 @@ bool BalloonFinder::findBalloonsOfSpecifiedColor(
   // *************************************************************************
   cvtColor(framep, framep, COLOR_BGR2HSV);
   switch(color){
-    case RED:
-        Scalar colorLower_l(0,120,100), colorLower_h(10,255,255);
-        Scalar colorUpper_l(170,120,100), colorUpper_h(180,255,255);
-        Mat mLower, mUpper;
-        inRange(framep, colorLower_l, colorLower_h, mLower);
-        inRange(framep, colorUpper_l, colorUpper_h, mUpper);
-        framep = mLower | mUpper;
+    case BalloonFinder::BalloonColor::RED:
+    {
+      Scalar colorLower_l(0,120,100), colorLower_h(10,255,255);
+      Scalar colorUpper_l(170,120,100), colorUpper_h(180,255,255);
+      Mat mLower, mUpper;
+      inRange(framep, colorLower_l, colorLower_h, mLower);
+      inRange(framep, colorUpper_l, colorUpper_h, mUpper);
+      framep = mLower | mUpper;
       break;
-    case BLUE:
-        Scalar colorLower(90, 120, 100), colorUpper(128, 255, 255);
-        inRange(framep, colorLower, colorUpper, framep);
+    }
+    case BalloonFinder::BalloonColor::BLUE:
+      Scalar colorLower(95, 120, 230), colorUpper(110, 255, 255);
+      inRange(framep, colorLower, colorUpper, framep);
       break;
   }
   constexpr int iterations = 5;
-  erode(framep, framep, Mat(), Point(-1, -1), iterations);
-  dilate(framep, framep, Mat(), Point(-1, -1), iterations);
-  std::vector<std::vector<Point>> contours;
+  erode(framep, framep, Mat(), cv::Point(-1, -1), iterations);
+  dilate(framep, framep, Mat(), cv::Point(-1, -1), iterations);
+  std::vector<std::vector<cv::Point>> contours;
   std::vector<Vec4i> hierarchy;
   findContours(framep, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
@@ -95,9 +97,13 @@ bool BalloonFinder::findBalloonsOfSpecifiedColor(
   Point2f center;
   float radius;
   constexpr float maxAspectRatio = 1.5;
+  constexpr float minAspectRatio = 1.2;
   constexpr float minRadius = 35;
   constexpr int minPointsFor_fitEllipse = 5;
   for(size_t ii = 0; ii < contours.size(); ii++){
+    if(touchesEdge(framep, contours[ii])){
+      continue;
+    };
     const Scalar color = Scalar(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256));
     minEnclosingCircle(contours[ii], center, radius);
     float aspectRatio = maxAspectRatio;
@@ -112,13 +118,13 @@ bool BalloonFinder::findBalloonsOfSpecifiedColor(
                 << radius << std::endl;
       drawContours(original, contours, ii, color, 2, LINE_8, hierarchy, 0);
     }
-    if (aspectRatio < maxAspectRatio && radius > minRadius) {
+    if (aspectRatio < maxAspectRatio && aspectRatio > minAspectRatio && radius > minRadius) {
       if(debuggingEnabled_){
         circle(original, center, static_cast<int>(radius), color, 2);
       }
       returnValue = true;
       Eigen::Vector2d rx;
-      rx << center.x, center.y;
+      rx << nCols_m1 - center.x, nRows_m1 - center.y;
       rxVec->push_back(rx);
     }
   }
@@ -129,8 +135,6 @@ bool BalloonFinder::findBalloonsOfSpecifiedColor(
   // the debugging section below, or add other such sections, so you can see
   // how your found centers compare with the back-projected centers.
   if (debuggingEnabled_) {
-    // Clone the original image for debugging purposes
-    original = image->clone();
     Eigen::Vector2d xc_pixels;
     Scalar trueProjectionColor;
     if (color == BalloonColor::BLUE) {

@@ -80,25 +80,26 @@ Point StructureComputer::computeStructure() {
   // *********************************************************************
   Eigen::MatrixXd H(2*bundleVec_.size(), 4);
   // Populate H matrix;
-  for(auto &bundle: bundleVec_){
+  for(int i = 0; i < bundleVec_.size(); i++){
+    auto bundle = bundleVec_[i];
     Eigen::MatrixXd proj_mat(3,4);
     Eigen::MatrixXd intrinsic_mat(3,4);
     intrinsic_mat << bundle->RCI, -1*bundle->RCI*bundle->rc_I;
     proj_mat = sensorParams_.K()*intrinsic_mat;
     double x_tilde = bundle->rx[0]*sensorParams_.pixelSize();
     double y_tilde = bundle->rx[1]*sensorParams_.pixelSize();
-    H << x_tilde*proj_mat.block<1,4>(2,0) - proj_mat.block<1,4>(0,0);
-    H << y_tilde*proj_mat.block<1,4>(2,0) - proj_mat.block<1,4>(1,0);
+    H.block<1,4>(2*i,0) = x_tilde*proj_mat.block<1,4>(2,0) - proj_mat.block<1,4>(0,0);
+    H.block<1,4>(2*i+1,0) = y_tilde*proj_mat.block<1,4>(2,0) - proj_mat.block<1,4>(1,0);
   }
   Eigen::MatrixXd Hr(2*bundleVec_.size(), 3);
   Eigen::MatrixXd z(2*bundleVec_.size(), 1);
   Hr << H.block(0,0, 2*bundleVec_.size(),3);
-  z << H.block(0,3, 2*bundleVec_.size(),1);
+  z << -1*H.block(0,3, 2*bundleVec_.size(),1);
   Eigen::MatrixXd R(2*bundleVec_.size(), 2*bundleVec_.size());
   R << pow(sensorParams_.pixelSize(),2)*blkdiag(sensorParams_.Rc(),bundleVec_.size());
   Eigen::MatrixXd Rinv = R.inverse();
   Eigen::MatrixXd Px_inv = Hr.transpose()*Rinv*Hr;
   point_.Px = Px_inv.inverse();
-  point_.rXIHat = Px_inv.ldlt().solve(Hr.transpose());
+  point_.rXIHat = Px_inv.ldlt().solve(Hr.transpose()*Rinv*z);
   return point_;
 }
